@@ -482,6 +482,15 @@
     <p class="subtitle">Extract crew roles & quantities from Xero quote PDFs using AI</p>
   </header>
 
+  <!-- API Key -->
+  <div class="api-section">
+    <span class="api-label">API Key</span>
+    <div class="api-input-wrap">
+      <input type="password" id="apiKey" placeholder="sk-ant-api03-..." autocomplete="off" />
+    </div>
+    <button class="toggle-key" onclick="toggleKey()">Show</button>
+  </div>
+
   <!-- Upload -->
   <div class="upload-zone" id="dropZone" onclick="document.getElementById('pdfInput').click()">
     <div class="upload-icon">
@@ -555,7 +564,8 @@
   </div>
 
   <footer>
-    <p>Powered by Claude — your API key is stored securely on the server and never exposed in the browser.</p>
+    <p>Powered by Claude — your API key is stored in your browser only and never sent anywhere except Anthropic.</p>
+    <p style="margin-top:4px;"><a href="https://console.anthropic.com" target="_blank">Get an API key</a> · <a href="https://docs.anthropic.com" target="_blank">Docs</a></p>
   </footer>
 
 </div>
@@ -575,6 +585,13 @@ dropZone.addEventListener('drop', e => {
   if (file && file.type === 'application/pdf') handleFile(file);
   else showError('Please upload a PDF file.');
 });
+
+function toggleKey() {
+  const input = document.getElementById('apiKey');
+  const btn = event.target;
+  if (input.type === 'password') { input.type = 'text'; btn.textContent = 'Hide'; }
+  else { input.type = 'password'; btn.textContent = 'Show'; }
+}
 
 function handleFile(file) {
   const reader = new FileReader();
@@ -597,6 +614,8 @@ function clearFile() {
 }
 
 async function parseQuote() {
+  const apiKey = document.getElementById('apiKey').value.trim();
+  if (!apiKey) { showError('Please enter your Anthropic API key above.'); return; }
   if (!pdfBase64) return;
 
   const jobName = document.getElementById('jobName').value.trim();
@@ -627,10 +646,12 @@ Rules:
 - Combine duplicate roles into one entry with summed quantities`;
 
   try {
-    const response = await fetch('/api/parse', {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
